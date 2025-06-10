@@ -4,13 +4,18 @@ variable "db_sg_id" {
   
 }
 
-variable "db_password" {
-  description = "The password for the database"
-  type        = string
-  sensitive   = true
-}
-
 variable "db_subnet_group" {
   description = "The name of the database subnet group"
+  type        = string
+}
+
+variable "sm_secret_db_user_id" {
+  description = "The Secrets Manager secret for the database username"
+  type        = string
+  
+}
+
+variable "sm_secret_db_pass_id" {
+  description = "The Secrets Manager secret for the database password"
   type        = string
 }
