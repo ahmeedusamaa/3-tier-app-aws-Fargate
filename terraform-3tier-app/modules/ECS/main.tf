@@ -9,7 +9,7 @@ resource "aws_ecs_task_definition" "frontend_task" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       =  var.ecs_task_execution_arn
 
 
   container_definitions = jsonencode([
@@ -48,7 +48,7 @@ resource "aws_ecs_task_definition" "backend_task" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       = var.ecs_task_execution_arn
 
   container_definitions = jsonencode([
     {
@@ -68,16 +68,18 @@ resource "aws_ecs_task_definition" "backend_task" {
           value = var.db_address
         },
         {
-          name  = "DB_USER"
-          value = var.db_user
-        },
-        {
-          name  = "DB_PASSWORD"
-          value = var.db_password
-        },
-        {
           name  = "DB_NAME"
           value = "appdb"
+        }
+      ]
+      secrets = [
+        {
+          name  = "DB_USER"
+          valueFrom = var.secret_db_user_arn
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = var.secret_db_pass_arn
         }
       ]
       logConfiguration = {
@@ -93,43 +95,43 @@ resource "aws_ecs_task_definition" "backend_task" {
 }
 
 resource "aws_ecs_service" "frontend_service" {
-    name            = "frontend-service"
-    cluster         = aws_ecs_cluster.main.id
-    task_definition = aws_ecs_task_definition.frontend_task.arn
-    desired_count   = 2
-    launch_type     = "FARGATE"
+  name            = "frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend_task.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
 
-    network_configuration {
-        security_groups  = [var.ecs_tasks_sg_id]
-        subnets          = var.private_subnet_ids
-        assign_public_ip = true
-    }
+  network_configuration {
+    security_groups  = [var.ecs_tasks_sg_id]
+    subnets          = var.private_subnet_ids
+    assign_public_ip = true
+  }
 
-    load_balancer {
-        target_group_arn = var.frontend_target_group_arn
-        container_name   = "frontend_container"
-        container_port   = 80
-    }
+  load_balancer {
+    target_group_arn = var.frontend_target_group_arn
+    container_name   = "frontend_container"
+    container_port   = 80
+  }
 }
 
 resource "aws_ecs_service" "backend_service" {
-    name            = "backend-service"
-    cluster         = aws_ecs_cluster.main.id
-    task_definition = aws_ecs_task_definition.backend_task.arn
-    desired_count   = 2
-    launch_type     = "FARGATE"
+  name            = "backend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.backend_task.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
 
-    network_configuration {
-        security_groups  = [var.ecs_tasks_sg_id]
-        subnets          = var.private_subnet_ids
-        assign_public_ip = true
-    }
+  network_configuration {
+    security_groups  = [var.ecs_tasks_sg_id]
+    subnets          = var.private_subnet_ids
+    assign_public_ip = true
+  }
 
-    load_balancer {
-        target_group_arn = var.backend_target_group_arn
-        container_name   = "backend_container"
-        container_port   = 3000
-    }
+  load_balancer {
+    target_group_arn = var.backend_target_group_arn
+    container_name   = "backend_container"
+    container_port   = 3000
+  }
 }
 
 resource "aws_cloudwatch_log_group" "frontend" {
@@ -143,22 +145,4 @@ resource "aws_cloudwatch_log_group" "backend" {
 }
 
 
-resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
