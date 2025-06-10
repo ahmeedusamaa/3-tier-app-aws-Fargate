@@ -50,6 +50,7 @@ terraform-3tier-app/
    ```bash
    git clone https://github.com/your-repo/Fargate-Three-Tier-Architecture-AWS-Terraform.git
    cd Fargate-Three-Tier-Architecture-AWS-Terraform
+   Before applying the configuration, ensure you provide the necessary variables. You can do this by creating a terraform.tfvars file in the root directory.
    ```
 
 2. **Initialize Terraform**:
