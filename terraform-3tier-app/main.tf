@@ -27,7 +27,8 @@ module "security_group" {
 module "storage" {
   source = "./modules/storage"
   db_sg_id = module.security_group.db_sg_id
-  db_password = var.db_password
+  sm_secret_db_user_id = module.secrets.secret_db_user_id
+  sm_secret_db_pass_id = module.secrets.secret_db_pass_id
   db_subnet_group = module.networking.database_subnet_group
   
 }
@@ -35,8 +36,6 @@ module "storage" {
 module "ECS" {
   source = "./modules/ECS"
   db_address = module.storage.database_address
-  db_user = var.db_user
-  db_password = var.db_password
   frontend_target_group_arn = module.compute.frontend_target_group_arn
   backend_target_group_arn = module.compute.backend_target_group_arn
   backend_alb_dns_name = module.compute.backend_alb_dns_name
@@ -45,5 +44,21 @@ module "ECS" {
   public_subnet_ids = module.networking.public_subnet_ids
   backend_image_name = var.backend_image_name
   frontend_image_name = var.frontend_image_name
+  secret_db_pass_arn = module.secrets.secret_db_pass_arn
+  secret_db_user_arn = module.secrets.secret_db_user_arn
+  ecs_task_execution_arn = module.iam.ecs_task_role_arn
+}
+
+module "secrets" {
+  source = "./modules/secrets"
+  username = var.db_user
+  password = var.db_password
   
+}
+
+module "iam" {
+  source = "./modules/iam"
+  secret_db_pass_arn = module.secrets.secret_db_pass_arn
+  secret_db_user_arn = module.secrets.secret_db_user_arn
+  kms_key_arn = module.secrets.keys_arn
 }
